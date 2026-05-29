@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#0f172a">
+    <title>Waktu Sholat Pro - Mahakarya Publik</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* === SISTEM TEMA & VARIABEL CSS === */
+        :root {
+            --bg-base: #020617;
+            --bg-gradient: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+            --glass-bg: rgba(15, 23, 42, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            
+            --emerald: #10b981;
+            --emerald-glow: rgba(16, 185, 129, 0.4);
+            --gold: #fbbf24;
+            --gold-glow: rgba(251, 191, 36, 0.4);
+            --danger: #ef4444;
+
+            --nav-height: 70px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="light"] {
+            --bg-base: #f8fafc;
+            --bg-gradient: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(0, 0, 0, 0.05);
+            --glass-shadow: 0 8px 32px 0 rgba(30, 41, 59, 0.05);
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --emerald: #059669;
+            --gold: #d97706;
+        }
+
+        body.time-fajar { --bg-gradient: linear-gradient(to bottom, #071224, #172554); }
+        body.time-siang { --bg-gradient: linear-gradient(to bottom, #38bdf8, #0ea5e9); --text-primary: #fff; }
+        body.time-sore { --bg-gradient: linear-gradient(to bottom, #ea580c, #b45309); --text-primary: #fff; }
+        body.time-malam { --bg-gradient: linear-gradient(to bottom, #020617, #0f172a); }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background 1.5s ease, color 0.5s ease;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: var(--glass-shadow);
+        }
+
+        /* === CUSTOM POP-UP (MODAL OVERLAY) === */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(2, 6, 23, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-box {
+            width: 90%;
+            max-width: 420px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            transform: translateY(30px) scale(0.95);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-overlay.active .modal-box {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            animation: float 3s ease-in-out infinite;
+            filter: drop-shadow(0 0 15px var(--gold-glow));
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .modal-title {
+            color: var(--gold);
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .modal-desc {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-btn-primary, .modal-btn-secondary {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            outline: none;
+        }
+
+        .modal-btn-primary {
+            background: var(--emerald);
+            color: white;
+            box-shadow: 0 4px 15px var(--emerald-glow);
+        }
+
+        .modal-btn-primary:hover { background: #059669; transform: translateY(-2px); }
+
+        .modal-btn-secondary {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            margin-top: 10px;
+        }
+
+        .modal-btn-secondary:hover {
+            border-color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* === HEADER RESPONSIVE === */
+        header {
+            position: sticky; top: 0; z-index: 1000; background: var(--glass-bg);
+            backdrop-filter: blur(20px); border-bottom: 1px solid var(--glass-border); padding: 1rem 5%;
+        }
+
+        .header-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 15px; }
+
+        .brand-logo { font-family: 'Amiri', serif; font-size: clamp(1.2rem, 4vw, 1.8rem); font-weight: 700; color: var(--gold); text-shadow: 0 0 15px var(--gold-glow); display: flex; align-items: center; gap: 8px; }
+
+        .header-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+        .icon-btn {
+            background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-primary);
+            width: clamp(35px, 8vw, 45px); height: clamp(35px, 8vw, 45px); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
+            transition: var(--transition); font-size: clamp(0.9rem, 2vw, 1.2rem);
+        }
+        .icon-btn:hover { border-color: var(--emerald); color: var(--emerald); box-shadow: 0 0 10px var(--emerald-glow); }
+
+        .status-badge {
+            font-size: clamp(0.7rem, 2vw, 0.85rem); padding: 6px 12px; border-radius: 20px;
+            background: rgba(16, 185, 129, 0.1); border: 1px solid var(--emerald); color: var(--emerald);
+            display: flex; align-items: center; gap: 5px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+        }
+        .status-badge.warning { border-color: var(--gold); color: var(--gold); background: rgba(251, 191, 36, 0.1); }
+
+        /* SEARCH BAR */
+        .search-container { display: flex; width: 100%; position: relative; max-width: 800px; margin: 0 auto; }
+        .search-input { flex: 1; padding: 12px 15px; border-radius: 12px 0 0 12px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: var(--text-primary); font-family: 'Poppins', sans-serif; outline: none; font-size: 1rem; width: 100%; }
+        .search-input::placeholder { color: var(--text-secondary); }
+        .search-btn { padding: 0 20px; border-radius: 0 12px 12px 0; background: var(--emerald); color: white; border: none; font-weight: 600; cursor: pointer; transition: var(--transition); }
+        .search-btn:hover { background: #059669; }
+
+        .search-results {
+            position: absolute; top: 100%; left: 0; right: 0; margin-top: 5px; background: var(--glass-bg); backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 12px; max-height: 250px; overflow-y: auto; display: none; z-index: 100;
+        }
+        .search-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid var(--glass-border); color: var(--text-primary); font-size: 0.95rem; }
+        .search-item:hover { background: rgba(16, 185, 129, 0.2); }
+        .search-item:last-child { border-bottom: none; }
+
+        /* === MAIN CONTENT (SPA ROUTING) === */
+        main {
+            flex: 1; padding: 2rem 5% calc(var(--nav-height) + 3rem);
+            max-width: 1200px; margin: 0 auto; width: 100%;
+        }
+
+        .view-section { display: none; width: 100%; flex-direction: column; gap: 2rem; animation: fadeIn 0.4s ease-out forwards; }
+        .view-section.active { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* === VIEW 1: HOME (DASHBOARD) === */
+        .hero { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 2.5rem 1rem; position: relative; }
+        .progress-container { position: relative; width: clamp(180px, 50vw, 250px); height: clamp(180px, 50vw, 250px); display: flex; justify-content: center; align-items: center; margin-bottom: 1.5rem; }
+        .progress-ring { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .progress-ring circle { transition: stroke-dashoffset 1s linear; stroke-linecap: round; fill: transparent; stroke-width: 8; r: 45%; cx: 50%; cy: 50%; }
+        .progress-bg { stroke: var(--glass-border); }
+        .progress-bar { stroke: var(--emerald); filter: drop-shadow(0 0 8px var(--emerald-glow)); }
+
+        .time-display { position: absolute; z-index: 2; width: 100%; }
+        .time-display h2 { font-size: clamp(0.8rem, 2vw, 1rem); color: var(--text-secondary); text-transform: uppercase; letter-spacing: 2px;}
+        .countdown-text { font-family: 'Poppins', sans-serif; font-size: clamp(1.8rem, 6vw, 3rem); font-weight: 800; line-height: 1.2; margin: 5px 0;}
+        .date-container { font-size: clamp(0.85rem, 2.5vw, 1rem); color: var(--text-secondary); }
+        .date-container strong { color: var(--gold); display: block; margin-top: 5px; }
+
+        .prayer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; width: 100%; }
+        .prayer-card { padding: 1.2rem 0.5rem; text-align: center; border-radius: 16px; transition: var(--transition); position: relative; overflow: hidden; }
+        .prayer-card.active { background: rgba(16, 185, 129, 0.15); border: 1px solid var(--emerald); box-shadow: 0 0 20px var(--emerald-glow); }
+        .p-name { font-size: clamp(0.8rem, 2vw, 0.9rem); color: var(--text-secondary); text-transform: uppercase; margin-bottom: 5px; }
+        .p-time { font-family: 'Amiri', serif; font-size: clamp(1.5rem, 4vw, 1.8rem); font-weight: bold; }
+
+        .map-section { width: 100%; height: clamp(250px, 50vw, 400px); border-radius: 20px; overflow: hidden; border: 1px solid var(--glass-border); }
+        .map-section iframe { width: 100%; height: 100%; border: none; }
+
+        .quote-box { padding: 2rem 1.5rem; text-align: center; border-left: 4px solid var(--gold); }
+        .q-arabic { font-family: 'Amiri', serif; font-size: clamp(1.5rem, 4vw, 2rem); margin-bottom: 15px; line-height: 1.8; color: var(--gold); }
+        .q-trans { font-size: clamp(0.85rem, 2vw, 1rem); color: var(--text-secondary); font-style: italic; line-height: 1.6; }
+
+        /* === VIEW 2: KIBLAT AR === */
+        .compass-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; text-align: center; padding: 2rem; }
+        .compass {
+            width: clamp(200px, 60vw, 300px); height: clamp(200px, 60vw, 300px); border-radius: 50%;
+            border: 2px solid var(--glass-border); position: relative;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="48" fill="none" stroke="%2394a3b8" stroke-width="0.5"/><text x="50" y="15" text-anchor="middle" fill="%2394a3b8" font-size="8">U</text><text x="50" y="93" text-anchor="middle" fill="%2394a3b8" font-size="8">S</text><text x="10" y="53" text-anchor="middle" fill="%2394a3b8" font-size="8">B</text><text x="90" y="53" text-anchor="middle" fill="%2394a3b8" font-size="8">T</text></svg>') center/cover;
+            transition: transform 0.1s cubic-bezier(0.2, 0, 0, 1); box-shadow: inset 0 0 20px rgba(0,0,0,0.5); margin-bottom: 2rem;
+        }
+        .kaaba-pointer {
+            position: absolute; top: 10px; left: calc(50% - 15px); width: 30px; height: 30px; background: var(--emerald);
+            border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 15px var(--emerald);
+            transition: transform 0.5s ease;
+        }
+        .kaaba-pointer::after { content: '🕋'; font-size: 16px; }
+        .compass-btn { padding: 12px 24px; background: transparent; border: 1px solid var(--gold); color: var(--gold); border-radius: 8px; font-family: inherit; font-size: 1rem; cursor: pointer; transition: var(--transition); }
+        .compass-btn:hover { background: var(--gold); color: var(--bg-base); }
+        
+        /* === VIEW 3: DZIKIR === */
+        .dzikir-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; text-align: center; }
+        .counter-display { font-size: clamp(5rem, 15vw, 8rem); font-weight: 800; font-family: 'Amiri', serif; color: var(--gold); text-shadow: 0 0 30px var(--gold-glow); margin-bottom: 2rem; }
+        .tap-area {
+            width: clamp(160px, 50vw, 220px); height: clamp(160px, 50vw, 220px); border-radius: 50%;
+            background: linear-gradient(135deg, var(--emerald), #059669); color: white; font-size: 1.5rem; font-weight: 600;
+            display: flex; justify-content: center; align-items: center; cursor: pointer; user-select: none;
+            transition: transform 0.1s; box-shadow: 0 10px 30px var(--emerald-glow), inset 0 -5px 15px rgba(0,0,0,0.2);
+        }
+        .tap-area:active { transform: scale(0.92); box-shadow: 0 5px 15px var(--emerald-glow); }
+        .reset-btn { margin-top: 2rem; color: var(--text-secondary); background: none; border: none; font-size: 1rem; cursor: pointer; text-decoration: underline; }
+
+        /* === BOTTOM NAV === */
+        nav.bottom-nav {
+            position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); width: 90%; max-width: 500px; height: var(--nav-height);
+            background: var(--glass-bg); backdrop-filter: blur(20px); border: 1px solid var(--glass-border); border-radius: 35px;
+            display: flex; justify-content: space-around; align-items: center; padding: 0 1rem; box-shadow: var(--glass-shadow); z-index: 1000;
+        }
+        .nav-item {
+            color: var(--text-secondary); text-decoration: none; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 60px; height: 60px; border-radius: 50%; transition: var(--transition); font-size: 0.75rem; gap: 4px; cursor: pointer;
+        }
+        .nav-item.active { color: var(--emerald); background: rgba(16, 185, 129, 0.1); transform: translateY(-5px); }
+        .nav-icon { font-size: 1.3rem; pointer-events: none; }
+        .nav-item span:not(.nav-icon) { pointer-events: none; }
+
+        /* === FOOTER === */
+        footer {
+            margin-top: auto; text-align: center; padding: 3rem 5% calc(var(--nav-height) + 2rem);
+            font-size: 0.85rem; color: var(--text-secondary); border-top: 1px solid var(--glass-border); background: var(--bg-base); width: 100%;
+        }
+        footer strong { color: var(--gold); font-size: 1rem; display: block; margin-bottom: 8px;}
+        footer p { margin-bottom: 8px; line-height: 1.6; }
+        footer a { color: var(--emerald); text-decoration: none; word-break: break-all; }
+        footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div id="welcome-modal" class="modal-overlay">
+        <div class="modal-box glass">
+            <span class="modal-icon">🌍</span>
+            <h3 class="modal-title">Selamat Datang</h3>
+            <p class="modal-desc">
+                Situs ini membutuhkan izin lokasi GPS Anda untuk memuat jadwal akurat. Anda juga dapat menggunakan kotak pencarian di atas untuk mencari jadwal sholat secara manual.
+            </p>
+            <button id="btn-modal-gps" class="modal-btn-primary">Gunakan Lokasi Saat Ini</button>
+            <button id="btn-modal-manual" class="modal-btn-secondary">Cari Manual Saja</button>
+        </div>
+    </div>
+
+    <header>
+        <div class="header-top">
+            <div class="brand-logo">☪️ Waktu Sholat Pro</div>
+            <div class="header-controls">
+                <div class="status-badge warning" id="loc-badge">📍 Menunggu Lokasi</div>
+                <button class="icon-btn" id="btn-mute" title="Suara / Senyap">🔔</button>
+                <button class="icon-btn" id="btn-theme" title="Ubah Tema">🌙</button>
+            </div>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" id="search-input" class="search-input" placeholder="Cari Kota/Kab (Cth: Jakarta)">
+            <button id="btn-search" class="search-btn">Cari</button>
+            <div id="search-results" class="search-results"></div>
+        </div>
+    </header>
+
+    <main>
+
+        <section id="view-home" class="view-section active">
+            <div class="hero glass">
+                <div class="progress-container">
+                    <svg class="progress-ring"><circle class="progress-bg"></circle><circle class="progress-bar" id="progress-circle"></circle></svg>
+                    <div class="time-display">
+                        <h2 id="next-prayer-label">Pilih Lokasi</h2>
+                        <div class="countdown-text" id="countdown">--:--:--</div>
+                    </div>
+                </div>
+                <div class="date-container">
+                    <span id="date-masehi">Memuat Tanggal...</span>
+                    <strong id="date-hijri">Memuat Hijriah...</strong>
+                </div>
+            </div>
+
+            <div class="prayer-grid" id="prayer-grid">
+                <div class="glass prayer-card"><div class="p-name">-</div><div class="p-time">--:--</div></div>
+                <div class="glass prayer-card"><div class="p-name">-</div><div class="p-time">--:--</div></div>
+            </div>
+
+            <div class="map-section glass">
+                <iframe id="g_map" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+
+            <div class="quote-box glass">
+                <div class="q-arabic">وَأَقِيمُوا الصَّلَاةَ وَآتُوا الزَّكَاةَ</div>
+                <div class="q-trans">"Dan laksanakanlah shalat dan tunaikanlah zakat." (QS. Al-Baqarah: 43)</div>
+            </div>
+        </section>
+
+        <section id="view-qibla" class="view-section">
+            <div class="hero glass">
+                <h3>🧭 Kompas Kiblat AR</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">Arahkan bagian atas perangkat secara datar mengikuti jarum Ka'bah.</p>
+            </div>
+            <div class="compass-wrapper glass">
+                <div class="compass" id="compass-plate">
+                    <div class="kaaba-pointer" id="kaaba-pointer"></div>
+                </div>
+                <button class="compass-btn" id="btn-cal-compass">Kalibrasi / Aktifkan Sensor</button>
+                <p style="margin-top: 15px; font-size: 0.8rem; color: var(--text-secondary);" id="compass-status">Menunggu izin sensor giroskop...</p>
+            </div>
+        </section>
+
+        <section id="view-dzikir" class="view-section">
+            <div class="hero glass">
+                <h3>📿 Dzikir Elektronik</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">Hitungan Anda tersimpan otomatis di browser perangkat ini.</p>
+            </div>
+            <div class="dzikir-wrapper glass">
+                <h2 style="color: var(--text-secondary); font-size: 1.2rem; font-weight: 400; text-transform: uppercase; letter-spacing: 2px;">Subhanallah</h2>
+                <div class="counter-display" id="tally-count">0</div>
+                <div class="tap-area" id="btn-tally">SENTUH</div>
+                <button class="reset-btn" id="btn-reset-tally">Mulai Ulang Hitungan</button>
+            </div>
+        </section>
+
+    </main>
+
+    <nav class="bottom-nav">
+        <a class="nav-item active" data-target="view-home"><span class="nav-icon">🕌</span><span>Jadwal</span></a>
+        <a class="nav-item" data-target="view-qibla"><span class="nav-icon">🧭</span><span>Kiblat</span></a>
+        <a class="nav-item" data-target="view-dzikir"><span class="nav-icon">📿</span><span>Dzikir</span></a>
+    </nav>
+
+    <footer>
+        <strong>Developed By: Sadewa Al Hafidz</strong>
+        <p>Copyright ©2026 All Rights Reserved</p>
+        <p>Metode Perhitungan: Kementerian Agama Republik Indonesia (Kemenag RI)<br>
+        Credit API: <a href="https://api.myquran.com/" target="_blank">https://api.myquran.com/</a></p>
+    </footer>
+
+    <audio id="audio-notif" src="https://actions.google.com/sounds/v1/alarms/spaceship_alarm.ogg" preload="auto"></audio>
+
+    <script>
+        // ==========================================
+        // 1. STATE & DOM REFERENCES
+        // ==========================================
+        const STATE = { jadwal: null, nextPrayerKey: null, nextPrayerTime: null, isMuted: false, cityId: null, cityName: null, lat: null, lon: null };
+
+        const DOM = {
+            locBadge: document.getElementById('loc-badge'),
+            gMap: document.getElementById('g_map'),
+            grid: document.getElementById('prayer-grid'),
+            dateMasehi: document.getElementById('date-masehi'),
+            dateHijri: document.getElementById('date-hijri'),
+            nextLabel: document.getElementById('next-prayer-label'),
+            countdown: document.getElementById('countdown'),
+            circle: document.getElementById('progress-circle'),
+            searchInput: document.getElementById('search-input'),
+            btnSearch: document.getElementById('btn-search'),
+            searchResults: document.getElementById('search-results'),
+            navItems: document.querySelectorAll('.nav-item'),
+            views: document.querySelectorAll('.view-section'),
+            welcomeModal: document.getElementById('welcome-modal'),
+            btnModalGps: document.getElementById('btn-modal-gps'),
+            btnModalManual: document.getElementById('btn-modal-manual')
+        };
+
+        const PRAYER_KEYS = ['imsak', 'subuh', 'terbit', 'dzuhur', 'ashar', 'maghrib', 'isya'];
+        const PRAYER_NAMES = { imsak:'Imsak', subuh:'Subuh', terbit:'Syuruk', dzuhur:'Dzuhur', ashar:'Ashar', maghrib:'Maghrib', isya:'Isya' };
+
+        // ==========================================
+        // 2. MODAL & SPA NAVIGATION LOGIC
+        // ==========================================
+        
+        // Memunculkan Modal saat situs dimuat jika data kosong
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!STATE.jadwal) DOM.welcomeModal.classList.add('active');
+            calculateDates(); // Memuat tanggal awal
+        });
+
+        // Event Modal Buttons
+        DOM.btnModalGps.addEventListener('click', () => {
+            DOM.welcomeModal.classList.remove('active');
+            initGeolocation();
+        });
+
+        DOM.btnModalManual.addEventListener('click', () => {
+            DOM.welcomeModal.classList.remove('active');
+            DOM.searchInput.focus();
+        });
+
+        // Tab Navigation
+        DOM.navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = item.getAttribute('data-target');
+                
+                DOM.views.forEach(v => v.classList.remove('active'));
+                document.getElementById(targetId).classList.add('active');
+
+                DOM.navItems.forEach(n => n.classList.remove('active'));
+                item.classList.add('active');
+
+                if (navigator.vibrate) navigator.vibrate(20);
+            });
+        });
+
+        // ==========================================
+        // 3. CORE LOGIC (SEARCH & GPS)
+        // ==========================================
+        function initCircleSVG() {
+            const circle = DOM.circle;
+            const radius = circle.r.baseVal.value;
+            const circumference = radius * 2 * Math.PI;
+            circle.style.strokeDasharray = `${circumference} ${circumference}`;
+            circle.style.strokeDashoffset = `${circumference}`;
+            return circumference;
+        }
+
+        DOM.btnSearch.addEventListener('click', handleSearch);
+        DOM.searchInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') handleSearch(); });
+        document.addEventListener('click', (e) => { if(!e.target.closest('.search-container')) DOM.searchResults.style.display = 'none'; });
+
+        async function handleSearch() {
+            const query = DOM.searchInput.value.trim();
+            if (!query) return;
+            DOM.btnSearch.innerText = '⏳';
+            try {
+                const res = await fetch(`https://api.myquran.com/v2/sholat/kota/cari/${encodeURIComponent(query)}`);
+                const data = await res.json();
+                DOM.searchResults.innerHTML = '';
+                if (data.status && data.data.length > 0) {
+                    DOM.searchResults.style.display = 'block';
+                    data.data.forEach(city => {
+                        const div = document.createElement('div');
+                        div.className = 'search-item'; div.innerText = city.lokasi;
+                        div.onclick = () => selectCity(city.id, city.lokasi);
+                        DOM.searchResults.appendChild(div);
+                    });
+                } else { alert('Kota tidak ditemukan.'); }
+            } catch (err) { alert('Kesalahan jaringan.'); } finally { DOM.btnSearch.innerText = 'Cari'; }
+        }
+
+        async function selectCity(id, name) {
+            DOM.searchResults.style.display = 'none';
+            DOM.searchInput.value = '';
+            STATE.cityId = id; STATE.cityName = name;
+            DOM.locBadge.innerHTML = `📍 ${name}`; DOM.locBadge.className = 'status-badge'; 
+            
+            try {
+                const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(name)}&format=json&limit=1`);
+                const geoData = await geoRes.json();
+                if(geoData.length > 0) { STATE.lat = geoData[0].lat; STATE.lon = geoData[0].lon; updateMap(STATE.lat, STATE.lon); }
+            } catch (e) { console.log("Gagal memuat peta dari pencarian"); }
+
+            fetchJadwalByCityId(id);
+        }
+
+        function initGeolocation() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        STATE.lat = pos.coords.latitude; STATE.lon = pos.coords.longitude;
+                        updateMap(STATE.lat, STATE.lon); fetchCityNameViaGPS(STATE.lat, STATE.lon);
+                    },
+                    (err) => { alert("Akses lokasi ditolak. Silakan cari kota secara manual."); },
+                    { enableHighAccuracy: true, timeout: 5000 }
+                );
+            }
+        }
+
+        function updateMap(lat, lon) { DOM.gMap.src = `https://maps.google.com/maps?q=${lat},${lon}&hl=id&z=14&output=embed`; }
+
+        async function fetchCityNameViaGPS(lat, lon) {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                const data = await res.json();
+                let city = data.address.city || data.address.county || data.address.town || "";
+                city = city.replace(/Kabupaten |Kota /gi, '').trim();
+                if(city) { DOM.searchInput.value = city; handleSearch(); }
+            } catch (e) { console.warn("Reverse Geocoding Error"); }
+        }
+
+        async function fetchJadwalByCityId(id) {
+            const today = new Date();
+            const y = today.getFullYear(); const m = String(today.getMonth() + 1).padStart(2, '0'); const d = String(today.getDate()).padStart(2, '0');
+            try {
+                const res = await fetch(`https://api.myquran.com/v2/sholat/jadwal/${id}/${y}/${m}/${d}`);
+                const data = await res.json();
+                if (data.status) {
+                    STATE.jadwal = data.data.jadwal;
+                    renderGrid(); calculateDates();
+                }
+            } catch (e) { alert("Gagal mengambil data jadwal."); }
+        }
+
+        function renderGrid() {
+            DOM.grid.innerHTML = '';
+            PRAYER_KEYS.forEach(key => {
+                if (STATE.jadwal[key]) {
+                    const el = document.createElement('div'); el.className = `glass prayer-card`; el.id = `card-${key}`;
+                    el.innerHTML = `<div class="p-name">${PRAYER_NAMES[key]}</div><div class="p-time">${STATE.jadwal[key]}</div>`;
+                    DOM.grid.appendChild(el);
+                }
+            });
+        }
+
+        function calculateDates() {
+            const now = new Date();
+            DOM.dateMasehi.innerText = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            DOM.dateHijri.innerText = new Intl.DateTimeFormat('id-TN-u-ca-islamic', {day: 'numeric', month: 'long', year: 'numeric'}).format(now);
+        }
+
+        function coreLoop() {
+            if (!STATE.jadwal) return;
+            const now = new Date(); let nextFound = false;
+
+            for (let i = 0; i < PRAYER_KEYS.length; i++) {
+                const key = PRAYER_KEYS[i]; const [h, m] = STATE.jadwal[key].split(':');
+                const pDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0);
+
+                if (now < pDate) {
+                    STATE.nextPrayerKey = key; STATE.nextPrayerTime = pDate; nextFound = true;
+                    document.querySelectorAll('.prayer-card').forEach(c => c.classList.remove('active'));
+                    const prevKey = i === 0 ? 'isya' : PRAYER_KEYS[i-1];
+                    const activeCard = document.getElementById(`card-${prevKey}`);
+                    if(activeCard) activeCard.classList.add('active');
+                    if(now.getSeconds() === 0) applyDynamicTheme(prevKey);
+                    break;
+                }
+            }
+
+            if (!nextFound) {
+                STATE.nextPrayerKey = 'imsak'; const [h, m] = STATE.jadwal.imsak.split(':');
+                STATE.nextPrayerTime = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, h, m, 0);
+            }
+
+            const diff = STATE.nextPrayerTime - now;
+            if (diff <= 0) {
+                if(!STATE.isMuted) document.getElementById('audio-notif').play();
+                fetchJadwalByCityId(STATE.cityId); return;
+            }
+
+            const hrs = Math.floor((diff % 86400000) / 3600000); const mins = Math.floor((diff % 3600000) / 60000); const secs = Math.floor((diff % 60000) / 1000);
+            DOM.nextLabel.innerText = `Menuju ${PRAYER_NAMES[STATE.nextPrayerKey]}`;
+            DOM.countdown.innerText = `-${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+
+            const circum = initCircleSVG();
+            let progress = (diff / 1000) / 14400; if (progress > 1) progress = 1;
+            DOM.circle.style.strokeDashoffset = circum * (1 - progress);
+        }
+
+        setInterval(coreLoop, 1000);
+
+        function applyDynamicTheme(k) {
+            document.body.className = '';
+            if(['imsak', 'subuh'].includes(k)) document.body.classList.add('time-fajar');
+            else if(['terbit', 'dzuhur', 'ashar'].includes(k)) document.body.classList.add('time-siang');
+            else if(k === 'maghrib') document.body.classList.add('time-sore');
+            else document.body.classList.add('time-malam');
+        }
+
+        // ==========================================
+        // 4. KIBLAT AR LOGIC
+        // ==========================================
+        const btnCompass = document.getElementById('btn-cal-compass');
+        const compassPlate = document.getElementById('compass-plate');
+        const kaabaPointer = document.getElementById('kaaba-pointer');
+        const compassStatus = document.getElementById('compass-status');
+        const qiblaAngle = 295; 
+
+        btnCompass.addEventListener('click', () => {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().then(state => {
+                    if (state === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation);
+                        btnCompass.style.display = 'none';
+                        compassStatus.innerText = "Sensor Aktif. Berputar menyesuaikan arah...";
+                    } else { compassStatus.innerText = "Izin sensor ditolak."; }
+                }).catch(console.error);
+            } else {
+                window.addEventListener('deviceorientationabsolute', handleOrientation);
+                btnCompass.style.display = 'none';
+                compassStatus.innerText = "Sensor Aktif.";
+            }
+        });
+
+        function handleOrientation(e) {
+            let compass = e.webkitCompassHeading || Math.abs(e.alpha - 360);
+            if (compass) {
+                compassPlate.style.transform = `rotate(${-compass}deg)`;
+                const rad = (qiblaAngle - 90) * (Math.PI / 180);
+                const r = compassPlate.offsetWidth / 2 - 20; 
+                const x = r * Math.cos(rad); const y = r * Math.sin(rad);
+                kaabaPointer.style.transform = `translate(${x}px, ${y}px) rotate(${compass}deg)`;
+            }
+        }
+
+        // ==========================================
+        // 5. DZIKIR COUNTER LOGIC
+        // ==========================================
+        let dzikirCount = parseInt(localStorage.getItem('wsp_dzikir_count') || '0');
+        const tallyDisplay = document.getElementById('tally-count');
+        const btnTally = document.getElementById('btn-tally');
+        tallyDisplay.innerText = dzikirCount;
+
+        btnTally.addEventListener('click', () => {
+            dzikirCount++;
+            tallyDisplay.innerText = dzikirCount;
+            localStorage.setItem('wsp_dzikir_count', dzikirCount);
+            if (navigator.vibrate) navigator.vibrate(30); 
+            
+            tallyDisplay.style.transform = 'scale(1.1)';
+            setTimeout(() => tallyDisplay.style.transform = 'scale(1)', 100);
+        });
+
+        document.getElementById('btn-reset-tally').addEventListener('click', () => {
+            if(confirm("Apakah Anda yakin ingin mengatur ulang hitungan Dzikir?")) {
+                dzikirCount = 0; tallyDisplay.innerText = dzikirCount; localStorage.setItem('wsp_dzikir_count', 0);
+            }
+        });
+
+        // Theme & Audio Controls
+        document.getElementById('btn-theme').addEventListener('click', () => {
+            const html = document.documentElement; html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+        });
+        document.getElementById('btn-mute').addEventListener('click', (e) => {
+            STATE.isMuted = !STATE.isMuted; e.target.innerHTML = STATE.isMuted ? '🔕' : '🔔';
+        });
+
+    </script>
+</body>
+</html>
